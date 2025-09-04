@@ -29,9 +29,9 @@ if __name__ == '__main__':
     cat_cols = features_train.select_dtypes(include='object').columns.tolist()
 
     if in_colab():
-        grid_search_cat = joblib.load('grid_search_cat.pkl')
+        grid_search_cat = joblib.load('grid_search_cat.joblib')
     else:
-        grid_search_cat = joblib.load('cv_tuning_results/grid_search_cat.pkl')
+        grid_search_cat = joblib.load('cv_tuning_results/grid_search_cat.joblib')
 
     model_cat = grid_search_cat.best_estimator_
 

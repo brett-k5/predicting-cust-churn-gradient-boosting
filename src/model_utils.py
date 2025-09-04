@@ -72,7 +72,7 @@ def tuning_cv(features_train: pd.DataFrame,
     print("Best cross-validation score: ", grid_search.best_score_)
 
     os.makedirs("cv_tuning_results", exist_ok=True)
-    grid_search_path = f'cv_tuning_results/grid_search_{model_type}.pkl'
+    grid_search_path = f'cv_tuning_results/grid_search_{model_type}.joblib'
     joblib.dump(grid_search, grid_search_path)
     if in_colab():
         from google.colab import files
@@ -116,12 +116,13 @@ def shap_eval(returned_estimator: BaseEstimator,
 
     # Generate and save SHAP summary plot
     plt.figure()
-    shap.summary_plot(shap_values, features, show=True)
+    shap.summary_plot(shap_values, features, show=False)
     if cv:
         plot_path = f'cv_tuning_results/{model_type}_shap_summary_plot_fold{fold}.png'
     else:
         plot_path = f'test_results/{model_type}_test_shap_plot.png'
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.show
     plt.close()
 
     if in_colab():
@@ -144,7 +145,8 @@ def accuracy_threshold_shap(features_train: pd.DataFrame,
     os.makedirs("cv_tuning_results", exist_ok=True)
 
     skf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=12345)
-    scores = []
+    acc_scores = []
+    recall_scores = []
     probs = []
     y_val_all = []
     for i, (train_idx, val_idx) in enumerate(skf.split(features_train, target_train)):
@@ -161,8 +163,11 @@ def accuracy_threshold_shap(features_train: pd.DataFrame,
         pred_prob = model.predict_proba(X_val)[:, 1]
         probs.extend(pred_prob)
 
-        score = accuracy_score(y_val, preds)
-        scores.append(score)
+        acc_score = accuracy_score(y_val, preds)
+        acc_scores.append(acc_score)
+
+        rec_score = recall_score(y_val, preds)
+        recall_scores.append(rec_score)
 
         y_val_all.extend(np.array(y_val))
 
@@ -174,21 +179,30 @@ def accuracy_threshold_shap(features_train: pd.DataFrame,
     optimal_idx = np.argmax(youden_j)
     optimal_threshold = thresholds[optimal_idx]
     print(f"Optimal threshold: {optimal_threshold:.4f}")
-    mean_accuracy = np.mean(scores)
+
+    # Calculate mean accuracy and recall scores
+    mean_accuracy = np.mean(acc_scores)
+    mean_recall = np.mean(recall_scores)
     
     # Save the mean accuracy score and threshold
-    accuracy_path = f"cv_tuning_results/{model_type}_mean_accuracy.pkl"
-    threshold_path = f"cv_tuning_results/{model_type}_optimal_threshold.pkl"
+    accuracy_path = f"cv_tuning_results/{model_type}_mean_accuracy.joblib"
+    recall_path = f"cv_tuning_results/{model_type}_mean_recall.joblib"
+    threshold_path = f"cv_tuning_results/{model_type}_optimal_threshold.joblib"
     joblib.dump(mean_accuracy, accuracy_path)
+    joblib.dump(mean_recall, recall_path)
     joblib.dump(optimal_threshold, threshold_path)
     if in_colab():
         from google.colab import files
         files.download(accuracy_path)
+        files.download(recall_path)
         files.download(threshold_path)
     else:
         print(f"Saved mean accuracy to: {accuracy_path}")
+        print(f"saved mean recall to: {recall_path}")
         print(f"saved optimal decision threshold to {threshold_path}")
     print(f"Mean cross-validation accuracy score of best estimator: {mean_accuracy:.4f}")
+    print(f"Mean cross-validation recall score of best estimator: {mean_recall:.4f}")
+
 
 
 # Define a function that prints metrics for model performance on test set
@@ -197,29 +211,44 @@ def print_save_metrics(returned_estimator: BaseEstimator,
                   target_train: pd.Series, 
                   features_test: pd.DataFrame, 
                   target_test: pd.Series,
-                  optimal_threshold: float) -> None:
+                  optimal_threshold: float,
+                  ignore_youden_j: bool = False) -> None:
     """
     1. Trains model on full training set
     2. Then makes predictions on test set
     3. Calculates and prints roc_auc, accuracy, and recall scores for the model's predictions
     """
-    returned_estimator.fit(features_train, target_train)
+    if isinstance(returned_estimator, CatBoostClassifier):
+        cat_cols = features_train.select_dtypes(include='category').columns.tolist()
+        for col in cat_cols:
+            features_train[col] = features_train[col].astype(str).fillna('missing')
+            features_test[col] = features_test[col].astype(str).fillna('missing')
+        cat_cols = features_train.select_dtypes(include='object').columns.tolist()
+        returned_estimator.fit(features_train, target_train, cat_features=cat_cols)
+
+    else:
+        returned_estimator.fit(features_train, target_train)
     pred_prob = returned_estimator.predict_proba(features_test)[:, 1]
+    preds = returned_estimator.predict(features_test)
+    preds_opt = pred_prob > optimal_threshold
 
     roc_auc = roc_auc_score(target_test, pred_prob)
     print(f"Roc_Auc score for model: {roc_auc:.4f}")
-
-    preds = pred_prob > optimal_threshold
-    accuracy = accuracy_score(target_test, preds)
+    
+    if ignore_youden_j:
+        accuracy = accuracy_score(target_test, preds)
+        recall = recall_score(target_test, preds)
+    else: 
+        accuracy = accuracy_score(target_test, preds_opt)
+        recall = recall_score(target_test, preds_opt)
     print(f"Accuracy score for model: {accuracy:.4f}")
-
-    recall = recall_score(target_test, preds)
     print(f"Recall score for model: {recall:.4f}\n")
 
     scores_df = pd.DataFrame([{'roc_auc': roc_auc, 
                                'accuracy_score': accuracy, 
                                'recall_score': recall}])
     
+
     # Create test_results directory if it doesn't already exist
     os.makedirs("test_results", exist_ok=True)
     scores_df.to_csv('test_results/test_scores.csv')
@@ -237,26 +266,45 @@ def load_grid_search(grid_search_path):
         raise FileNotFoundError("Check to make sure grid_search_path passed to function matches actual grid_Search_path")
 
 
+
+def string_selection(model):
+        if isinstance(model, CatBoostClassifier):
+            model_type = 'cat'
+        elif isinstance(model, LGBMClassifier):
+            model_type = 'light'
+        elif isinstance(model, XGBClassifier):
+            model_type = 'xgb'
+        else:
+            print("Model is of an unexpexted type")
+        return model_type
+
+
+
 def model_selection(model_cat,
                     model_light,
                     model_xgb,
                     model_cat_roc_auc,
                     model_light_roc_auc,
-                    model_xgb_roc_auc):
-    if max(model_cat_roc_auc, model_light_roc_auc, model_xgb_roc_auc) == model_cat_roc_auc:
-        return model_cat
-    elif max(model_cat_roc_auc, model_light_roc_auc, model_xgb_roc_auc) == model_light_roc_auc:
-        return model_light
+                    model_xgb_roc_auc,
+                    override_model = None):
+    if override_model:
+        return override_model, string_selection(override_model)
     else:
-        return model_xgb 
+        best_roc_auc = max(model_cat_roc_auc, model_light_roc_auc, model_xgb_roc_auc)
+        if best_roc_auc == model_cat_roc_auc:
+            return model_cat, 'cat' 
+        elif best_roc_auc == model_light_roc_auc:
+            return model_light, 'light'
+        else:
+            return model_xgb, 'xgb'
     
 def load_threshold(best_model: BaseEstimator) -> float:
     if isinstance(best_model, CatBoostClassifier):
-        filename = 'catboost_optimal_threshold.pkl'
+        filename = 'catboost_optimal_threshold.joblib'
     elif isinstance(best_model, LGBMClassifier):
-        filename = 'lightgbm_optimal_threshold.pkl'
+        filename = 'lightgbm_optimal_threshold.joblib'
     elif isinstance(best_model, XGBClassifier):
-        filename = 'xgboost_optimal_threshold.pkl'
+        filename = 'xgboost_optimal_threshold.joblib'
     else:
         raise TypeError("Function expects an instance of either CatBoostClassifier, "
                         "LGBMClassifier, or XGBClassifier as the best_model input.")
@@ -265,6 +313,7 @@ def load_threshold(best_model: BaseEstimator) -> float:
     else:
         optimal_threshold = joblib.load(f'cv_tuning_results/{filename}')
     return optimal_threshold
+
         
 
     

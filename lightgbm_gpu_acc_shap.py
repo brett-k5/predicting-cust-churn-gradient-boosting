@@ -23,9 +23,9 @@ if __name__ == '__main__':
     target_train = pd.read_parquet('target_train.parquet')
 
     if in_colab():
-        grid_search_light = joblib.load('grid_search_light.pkl')
+        grid_search_light = joblib.load('grid_search_light.joblib')
     else:
-        grid_search_light = joblib.load('cv_tuning_results/grid_search_light.pkl')
+        grid_search_light = joblib.load('cv_tuning_results/grid_search_light.joblib')
 
     model_light = grid_search_light.best_estimator_
 

@@ -40,20 +40,21 @@ if __name__ == '__main__':
     except Exception as e:
         print("GPU support is NOT enabled:", e)
 
-    model_light = load_grid_search('grid_search_light.pkl').best_estimator_
-    model_cat = load_grid_search('grid_search_cat.pkl').best_estimator_
-    model_xgb = load_grid_search('grid_search_xgb.pkl').best_estimator_
+    model_light = load_grid_search('grid_search_light.joblib').best_estimator_
+    model_cat = load_grid_search('grid_search_cat.joblib').best_estimator_
+    model_xgb = load_grid_search('grid_search_xgb.joblib').best_estimator_
 
-    model_light_roc_auc = load_grid_search('grid_search_light.pkl').best_score_
-    model_cat_roc_auc = load_grid_search('grid_search_cat.pkl').best_score_
-    model_xgb_roc_auc = load_grid_search('grid_search_xgb.pkl').best_score_
+    model_light_roc_auc = load_grid_search('grid_search_light.joblib').best_score_
+    model_cat_roc_auc = load_grid_search('grid_search_cat.joblib').best_score_
+    model_xgb_roc_auc = load_grid_search('grid_search_xgb.joblib').best_score_
 
-    best_model = model_selection(model_cat,
-                                 model_light,
-                                 model_xgb,
-                                 model_cat_roc_auc,
-                                 model_light_roc_auc,
-                                 model_xgb_roc_auc)
+    best_model, model_type = model_selection(model_cat,
+                                             model_light,
+                                             model_xgb,
+                                             model_cat_roc_auc,
+                                             model_light_roc_auc,
+                                             model_xgb_roc_auc,
+                                             override_model = model_light)
     
 
     print(f"Best Model Type: {type(best_model).__name__}")
@@ -61,20 +62,12 @@ if __name__ == '__main__':
     optimal_threshold = load_threshold(best_model)
 
     print_save_metrics(best_model, 
-                  features_train, 
-                  target_train, 
-                  features_test, 
-                  target_test,
-                  optimal_threshold)
-    
-    if isinstance(best_model, CatBoostClassifier):
-        model_type = 'cat'
-    elif isinstance(best_model, LGBMClassifier):
-        model_type = 'light'
-    elif isinstance(best_model, XGBClassifier):
-        model_type = 'xgb'
-    else:
-        print("Model is of an unexpexted type")
+                       features_train, 
+                       target_train, 
+                       features_test, 
+                       target_test,
+                       optimal_threshold)
+
 
     shap_eval(best_model, 
               model_type, 

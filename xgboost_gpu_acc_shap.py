@@ -23,9 +23,9 @@ if __name__ == '__main__':
     target_train = pd.read_parquet('target_train.parquet')
 
     if in_colab():
-        grid_search_xgb = joblib.load('grid_search_xgb.pkl')
+        grid_search_xgb = joblib.load('grid_search_xgb.joblib')
     else:
-        grid_search_xgb = joblib.load('cv_tuning_results/grid_search_xgb.pkl')
+        grid_search_xgb = joblib.load('cv_tuning_results/grid_search_xgb.joblib')
 
     model_xgb = grid_search_xgb.best_estimator_
 
