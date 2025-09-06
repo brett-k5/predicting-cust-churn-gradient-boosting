@@ -1,24 +1,23 @@
-# Core
-pandas==2.2.2
-numpy==1.26.4
-scikit-learn==1.5.0
+# Data manipulation
+pandas
+numpy
 
-# Gradient Boosting Models
-lightgbm==4.3.0
-xgboost==2.0.3
-catboost==1.2.5
+# Machine learning
+scikit-learn
+xgboost
+lightgbm
+catboost
 
-# EDA and Visualization
-matplotlib==3.8.4
-seaborn==0.13.2
+# Model saving/loading
+joblib
 
-# Model Interpretability
-shap==0.45.0
+# Visualization
+matplotlib
+seaborn
+shap
 
-# Utility
-tqdm==4.66.4
-joblib==1.4.2
+# Stats/modeling
+statsmodels
 
-# Optional for notebook use or advanced plotting
-jupyterlab==4.1.8
-notebook==7.2.0
+# Jupyter/IPython-specific (optional, for display utils like Image)
+ipython
