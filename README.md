@@ -179,6 +179,7 @@ To run the Jupyter notebooks in this project, ensure you have the required packa
 ```powershell
 conda create --name project_name_env python=3.11
 conda activate project_name_env
+```
 
 ---
 
