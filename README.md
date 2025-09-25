@@ -167,6 +167,18 @@ project-root/
 ├── xgb_test_shap.csv
 └── xgb_test_shap_plot.png
 ```
+---
+
+## ⚙️ Setup / Running Notebooks
+
+To run the Jupyter notebooks in this project, ensure you have the required packages installed. **Conda is recommended**, especially on Windows, but any Python virtual environment will work.
+
+1. Create and activate your environment:
+
+**Using Conda (recommended on Windows):**
+```powershell
+conda create --name project_name_env python=3.11
+conda activate project_name_env
 
 ---
 
