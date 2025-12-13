@@ -167,10 +167,10 @@ project-root/
 ├── xgb_test_shap.csv
 └── xgb_test_shap_plot.png
 ```
+---
 ## 📌 Data
 
 You can download the necessary datasets for this project here: https://practicum-content.s3.us-west-1.amazonaws.com/data-eng/datasets/final_provider.zip. They will be in a zip file titled final_provider.zip. You will either have to manually unzip or add code to unzip.
----
 
 ## ⚙️ Setup / Running Notebooks
 
