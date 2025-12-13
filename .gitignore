@@ -12,7 +12,7 @@ Thumbs.db
 
 # Anaconda project files
 anaconda_projects/
-*.db
+*.db/
 
 # Environment files
 .env
@@ -30,18 +30,11 @@ contract.csv
 internet.csv
 personal.csv
 phone.csv
-features_test.parquet
-features_train.parquet
-target_test.parquet
-target_train.parquet
 
 # Model and tuning artifacts
 *.joblib
 grid_search_*.joblib
 *_shap_plot.png
-*.csv
-cv_tuning_results/
-test_results/
 
 # Python compiled files
 *.pyo
