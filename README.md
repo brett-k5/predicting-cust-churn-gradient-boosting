@@ -1,6 +1,6 @@
 # 🧠 Customer Churn Prediction with Gradient Boosting
 
-This project is an end-to-end machine learning pipeline designed to predict customer churn using powerful gradient boosting algorithms. We leveraged feature engineering, model tuning, cross-validation, and SHAP explainability tools to build a robust and interpretable solution. The final model is trained to identify customers likely to churn with high recall and precision.
+This project is a machine learning pipeline designed to predict customer churn using powerful gradient boosting algorithms. We leveraged feature engineering, model tuning, cross-validation, and SHAP explainability tools to build a robust and interpretable solution. The final model is trained to identify customers likely to churn with high recall and precision.
 
 ---
 
@@ -120,7 +120,7 @@ project-root/
 │
 ├── README.md
 ├── LICENSE
-├── Requirements.txt
+├── requirements.txt
 │
 ├── contract.csv
 ├── internet.csv
